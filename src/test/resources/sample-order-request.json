@@ -1,0 +1,25 @@
+{
+  "customerId": "CUST-12345",
+  "items": [
+    {
+      "productId": "PROD-001",
+      "name": "Smartphone",
+      "price": 799.99,
+      "quantity": 1
+    },
+    {
+      "productId": "PROD-002",
+      "name": "Wireless Earbuds",
+      "price": 129.99,
+      "quantity": 2
+    }
+  ],
+  "shippingAddress": {
+    "street": "123 Main St",
+    "city": "San Francisco",
+    "state": "CA",
+    "zipCode": "94105",
+    "country": "USA"
+  },
+  "paymentMethod": "CREDIT_CARD"
+}
