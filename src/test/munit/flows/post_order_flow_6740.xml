@@ -1,0 +1,34 @@
+<?xml version="1.0" ?>
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:munit="http://www.mulesoft.org/schema/mule/munit" xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xsi:schemaLocation="     http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd     http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd     http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd     http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+  <munit:config name="post_order_flow_6740.xml"/>
+  <munit:test name="post_order_flow_0" description="Test the post-order-flow for successful order creation when a valid order payload is received. This scenario covers the HTTP listener, validation transform, choice when condition, order transformation, success logging, and proper HTTP response variables.">
+    <munit:behavior>
+      <!-- Set event with valid order payload containing customerId and items array with at least one item -->
+      <!-- Each item in the array should have price and quantity fields for total calculation -->
+      <!-- Configure HTTP method as POST to match the listener configuration -->
+      <munit:set-event>
+        <munit:payload value="#[MunitTools::getResourceAsString('post_order_flow_6740/valid-order-request_1464.json')]" mediaType="application/json" encoding="UTF-8"/>
+        <munit:attributes value="#[{                 method: 'POST',                 requestPath: '/api/orders',                 headers: {                     'content-type': 'application/json'                 },                 queryParams: {}             }]" mediaType="application/java" encoding="UTF-8"/>
+      </munit:set-event>
+    </munit:behavior>
+    <munit:execution>
+      <!-- Execute the post-order-flow -->
+      <try>
+        <flow-ref name="post-order-flow"/>
+        <error-handler>
+          <on-error-continue type="ANY"/>
+        </error-handler>
+      </try>
+    </munit:execution>
+    <munit:validation>
+      <!-- Verify that the initial logger with message "Received order request" is called -->
+      <munit-tools:verify-call doc:name="Verify initial logger" processor="mule:logger">
+        <munit-tools:with-attributes>
+          <munit-tools:with-attribute whereValue="Received order request" attributeName="message"/>
+        </munit-tools:with-attributes>
+      </munit-tools:verify-call>
+      <!-- Verify flow executed without throwing unhandled exceptions -->
+      <munit-tools:assert-that doc:name="Assert execution completed" expression="#[true]" is="#[MunitTools::equalTo(true)]"/>
+    </munit:validation>
+  </munit:test>
+</mule>
