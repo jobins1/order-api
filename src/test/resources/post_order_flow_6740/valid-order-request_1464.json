@@ -1,0 +1,11 @@
+{
+  "customerId": "CUST-12345",
+  "items": [
+    {
+      "productId": "PROD-001", 
+      "name": "Smartphone",
+      "price": 799.99,
+      "quantity": 1
+    }
+  ]
+}
