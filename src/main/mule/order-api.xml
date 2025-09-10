@@ -108,4 +108,137 @@ output application/json
             </on-error-propagate>
         </error-handler>
     </flow>
+
+    <!-- Flow to generate tracking number for an order -->
+    <flow name="post-tracking-flow">
+        <http:listener config-ref="order-api-http-listener-config" path="/api/orders/{orderId}/tracking" allowedMethods="POST">
+            <http:response statusCode="#[vars.httpStatus default 201]" reasonPhrase="#[vars.reasonPhrase default 'Created']"/>
+            <http:error-response statusCode="#[vars.httpStatus default 500]" reasonPhrase="#[vars.reasonPhrase default 'Internal Server Error']"/>
+        </http:listener>
+        
+        <logger level="INFO" message="Generating tracking number for order: #[attributes.uriParams.orderId]" category="com.mycompany.order.tracking"/>
+        
+        <!-- Validate order ID -->
+        <choice>
+            <when expression="#[attributes.uriParams.orderId != null and attributes.uriParams.orderId != '']">
+                <!-- Generate tracking number -->
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload resource="dwl/generate-tracking.dwl"/>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">201</ee:set-variable>
+                        <ee:set-variable variableName="reasonPhrase">"Created"</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+                
+                <logger level="INFO" message="Tracking number generated: #[payload.trackingNumber] for order: #[payload.orderId]" category="com.mycompany.order.tracking"/>
+            </when>
+            <otherwise>
+                <!-- Handle invalid order ID -->
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload resource="dwl/tracking-error-response.dwl"/>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                        <ee:set-variable variableName="reasonPhrase">"Bad Request"</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+                
+                <logger level="WARN" message="Invalid order ID provided for tracking generation" category="com.mycompany.order.tracking"/>
+            </otherwise>
+        </choice>
+        
+        <error-handler>
+            <on-error-propagate type="ANY">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "status": "error",
+    "message": error.description,
+    "timestamp": now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">500</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+                <logger level="ERROR" message="Error generating tracking number: #[error.description]" category="com.mycompany.order.tracking"/>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+
+    <!-- Flow to retrieve tracking information -->
+    <flow name="get-tracking-flow">
+        <http:listener config-ref="order-api-http-listener-config" path="/api/tracking/{trackingNumber}" allowedMethods="GET">
+            <http:response statusCode="#[vars.httpStatus default 200]" reasonPhrase="#[vars.reasonPhrase default 'OK']"/>
+            <http:error-response statusCode="#[vars.httpStatus default 500]" reasonPhrase="#[vars.reasonPhrase default 'Internal Server Error']"/>
+        </http:listener>
+        
+        <logger level="INFO" message="Retrieving tracking information for: #[attributes.uriParams.trackingNumber]" category="com.mycompany.order.tracking"/>
+        
+        <!-- Validate tracking number -->
+        <choice>
+            <when expression="#[attributes.uriParams.trackingNumber != null and attributes.uriParams.trackingNumber != '' and sizeOf(attributes.uriParams.trackingNumber) >= 10]">
+                <!-- Retrieve tracking information -->
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload resource="dwl/get-tracking-info.dwl"/>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">200</ee:set-variable>
+                        <ee:set-variable variableName="reasonPhrase">"OK"</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+                
+                <logger level="INFO" message="Tracking information retrieved for: #[payload.trackingNumber]" category="com.mycompany.order.tracking"/>
+            </when>
+            <otherwise>
+                <!-- Handle invalid tracking number -->
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "status": "error",
+    "message": "Invalid tracking number. Tracking number must be at least 10 characters long.",
+    "timestamp": now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                        <ee:set-variable variableName="reasonPhrase">"Bad Request"</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+                
+                <logger level="WARN" message="Invalid tracking number provided: #[attributes.uriParams.trackingNumber]" category="com.mycompany.order.tracking"/>
+            </otherwise>
+        </choice>
+        
+        <error-handler>
+            <on-error-propagate type="ANY">
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "status": "error",
+    "message": error.description,
+    "timestamp": now()
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">500</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+                <logger level="ERROR" message="Error retrieving tracking information: #[error.description]" category="com.mycompany.order.tracking"/>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
 </mule>
